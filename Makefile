@@ -31,6 +31,7 @@ launcher-icon-4x.png: icon.svg
 	convert -background none $< -resize 192x192 $@
 apple-touch-icon.png: icon.svg
 	convert -background '#ddd' -bordercolor '#ddd' $< -resize 150x150 -border 15 $@
+.PHONY: rftg.appcache
 rftg.appcache: rftg.appcache.in
 	perl -lpe 's/VERSION/time/e' $< > $@
 rftg_webapp.zip: $(ICONS) network fonts rftg.js $(EXTERNAL) rftg.html rftg.js.mem rftg.manifest.json rftg.appcache
