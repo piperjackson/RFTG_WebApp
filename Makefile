@@ -15,7 +15,7 @@ dumpnet: dumpnet.o net.o
 #rftg: rftg.o engine.o init.o loadsave.o net.o ai.o
 rftg.js: rftg.bc engine.bc init.bc loadsave.bc net.bc ai.bc
 clean:
-	rm -f *.o *.bc $(PROGS) rftg.js rftg.js.mem $(ICONS)
+	rm -f *.o *.bc $(PROGS) rftg.js rftg.js.mem $(ICONS) rftg.appcache rftg_webapp.zip
 
 %.js: %.bc
 	emcc -O3 $^ -o $@ -s EXPORTED_FUNCTIONS=$(EXPORTS) -s NO_EXIT_RUNTIME=1
@@ -31,6 +31,10 @@ launcher-icon-4x.png: icon.svg
 	convert -background none $< -resize 192x192 $@
 apple-touch-icon.png: icon.svg
 	convert -background '#ddd' -bordercolor '#ddd' $< -resize 150x150 -border 15 $@
-
+rftg.appcache: rftg.appcache.in
+	perl -lpe 's/VERSION/time/e' $< > $@
 rftg_webapp.zip: $(ICONS) network fonts rftg.js $(EXTERNAL) rftg.html rftg.js.mem rftg.manifest.json rftg.appcache
 	zip -r $@ $^
+
+install: $(ICONS) network fonts rftg.js $(EXTERNAL) rftg.html rftg.js.mem rftg.manifest.json rftg.appcache
+	cp -r $^ $(INSTALLDIR)
