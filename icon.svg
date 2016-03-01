@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   width="200" height="200"
+   viewBox="0 0 1000 1000">
+                <path
+                   style="fill:#daa566"
+                   d="m500,500v-500a500,500 0 0,1 500,500z" />
+                <path
+                   style="fill:#fff200"
+                   d="m500,500h500a500,500 0 0,1 -500,500z" />
+                <path
+                   style="fill:#80cc28"
+                   d="m500,500v500a500,500 0 0,1 -500,-500z" />
+                <path
+                   style="fill:#80d6f7"
+                   d="m500,500h-500a500,500 0 0,1 500,-500z" />
+<g>
+   <animateTransform attributeType="xml"
+    				  attributeName="transform"
+    				  type="rotate"
+    				  from="0 500 500"
+    				  to="360 500 500"
+    				  dur="4s"
+    				  repeatCount="indefinite" />
+                <path
+                   style="fill:#231f20"
+                   d="m500,150a350,350 0 0,0 0,700z" />
+                <path
+                   style="fill:#ed1c24"
+                   d="m500,150a350,350 0 0,1 0,700z" />
+		</g>
+                <circle style="fill:#fff" cx="500" cy="500" r="225" />
+</svg>
