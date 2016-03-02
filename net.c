@@ -569,6 +569,66 @@ void free_net(net *learn)
 	free(learn->input_name);
 }
 
+#define NET_BIN_MAGIC 0x47746652
+
+/*
+ * Load binary network weights from disk.
+ */
+static int load_net_bin(net *learn, char *fname)
+{
+	FILE *fff;
+	int i, j;
+	int header[4];
+
+	/* Open weights file */
+	fff = fopen(fname, "r");
+
+	/* Check for failure */
+	if (!fff) return -1;
+
+	/* Read network magic and size from file */
+	if (fread(header, sizeof(*header), 4, fff) != 4) return -1;
+
+	/* Check for mismatch */
+	if (header[0] != NET_BIN_MAGIC ||
+            header[1] != learn->num_inputs ||
+	    header[2] != learn->num_hidden ||
+	    header[3] != learn->num_output) return -1;
+
+	/* Reset number of training iterations */
+        learn->num_training = 0;
+
+	/* Loop over hidden nodes */
+	for (i = 0; i < learn->num_hidden; i++)
+	{
+		/* Read weights */
+                if (fread(learn->hidden_weight[j], sizeof(double),
+                          learn->num_inputs + 1, fff) != learn->num_inputs + 1)
+                {
+                        /* Failure */
+                        return -1;
+                }
+	}
+
+	/* Loop over output nodes */
+	for (i = 0; i < learn->num_output; i++)
+	{
+		/* Read weights */
+                if (fread(learn->output_weight[j], sizeof(double),
+                          learn->num_hidden + 1, fff) != learn->num_hidden + 1)
+                {
+                        /* Failure */
+                        return -1;
+                }
+	}
+
+	/* Done */
+	fclose(fff);
+
+	/* Success */
+	return 0;
+}
+
 /*
  * Load network weights from disk.
  */
@@ -579,7 +639,13 @@ int load_net(net *learn, char *fname)
 	int input, hidden, output;
 	char name[80];
 
-	/* Open weights file */
+	/* Check if binary file */
+	if (!load_net_bin(learn, name)) {
+		/* Succeeded with binary load */
+		return 0;
+	}
+
+        /* Open weights file */
 	fff = fopen(fname, "r");
 
 	/* Check for failure */
@@ -713,6 +779,45 @@ void save_net(net *learn, char *fname)
 			/* Save a weight */
 			fprintf(fff, "%.12le\n", learn->output_weight[j][i]);
 		}
+	}
+
+	/* Done */
+	fclose(fff);
+}
+
+/*
+ * Save binary network weights to disk.
+ */
+void save_net_bin(net *learn, char *fname)
+{
+	FILE *fff;
+	int i, j;
+        int header[4];
+
+	/* Open output file */
+	fff = fopen(fname, "w");
+
+	/* Save network size */
+        header[0] = NET_BIN_MAGIC;
+        header[1] = learn->num_inputs;
+        header[2] = learn->num_hidden;
+        header[3] = learn->num_output;
+        fwrite(header, sizeof(*header), 4, fff);
+
+	/* Loop over hidden nodes */
+	for (i = 0; i < learn->num_hidden; i++)
+	{
+		/* Save weights */
+                fwrite(learn->hidden_weight[j], sizeof(double),
+                       learn->num_inputs + 1, fff);
+	}
+
+	/* Loop over output nodes */
+	for (i = 0; i < learn->num_output; i++)
+	{
+		/* Save weights */
+                fwrite(learn->output_weight[j], sizeof(double),
+                       learn->num_hidden + 1, fff);
 	}
 
 	/* Done */

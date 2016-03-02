@@ -109,3 +109,4 @@ extern void apply_training(net *learn);
 extern void free_net(net *learn);
 extern int load_net(net *learn, char *fname);
 extern void save_net(net *learn, char *fname);
+extern void save_net_bin(net *learn, char *fname);
