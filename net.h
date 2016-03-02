@@ -101,6 +101,7 @@ typedef struct net
 
 /* External functions */
 extern void make_learner(net *learn, int inputs, int hidden, int output);
+extern void random_net(net *learn);
 extern void compute_net(net *learn);
 extern void store_net(net *learn, int who);
 extern void clear_store(net *learn);
