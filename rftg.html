@@ -746,6 +746,15 @@ var GUI = (function() {
     return txt;
   }
 
+  function no_select() {
+    selectable_cards = {};
+    card_classes = {};
+    select_autoconfirm = true;
+    action_restrict = function() {
+      return false;
+    };
+    set_prompt('Thinking...');
+  }
   function do_select() {
     selectable_cards = {};
 
@@ -1318,19 +1327,25 @@ var GUI = (function() {
     list.forEach(function(e) { a[i++] = e; });
     a[i++] = special.length;
     special.forEach(function(e) { a[i++] = e; });
-    set_prompt('');
-    Module._continue_game(-1);
-    get_status();
-    display(true);
+    no_select();
+    display();
+    setTimeout(function() {
+      Module._continue_game(-1);
+      get_status();
+      display(true);
+    }, 50);
   }
   var do_undo = GUI.do_undo = function(v) {
     //    if (!game_over && (v === RESTART.NEW || v === RESTART.UNDO_GAME))
     //	if (!confirm(v === RESTART.NEW ? 'New Game' : 'Restart Game')) return;
     game_over = false;
-    set_prompt('');
-    Module._continue_game(v);
-    get_status();
+    no_select();
     display();
+    setTimeout(function() {
+      Module._continue_game(v);
+      get_status();
+      display();
+    }, 50);
   }
 
   function get_status() {
