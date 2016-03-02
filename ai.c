@@ -143,6 +143,9 @@ static void ai_initialize(game *g, int who, double factor)
 			sprintf(msg, "Warning: Couldn't open %s\n", fname);
 			display_error(msg);
 
+			/* Randomize initial weights */
+			random_net(&eval);
+
 			/* Perform initial training on new network */
 			initial_training(g);
 		}
@@ -171,6 +174,9 @@ static void ai_initialize(game *g, int who, double factor)
 			/* Print warning */
 			sprintf(msg, "Warning: Couldn't open %s\n", fname);
 			display_error(msg);
+
+			/* Randomize initial weights */
+			random_net(&role);
 		}
 	}
 
