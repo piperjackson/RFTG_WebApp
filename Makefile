@@ -1,5 +1,5 @@
 PROGS=rftg learner dumpnet netconv
-CFLAGS=$(shell pkg-config --cflags gtk+-2.0) -march=native -g
+CFLAGS=$(shell pkg-config --cflags gtk+-2.0) -march=native -O3
 GTKLIBS=$(shell pkg-config --libs gtk+-2.0)
 LDLIBS=-lm
 EXPORTS="['_main','_selection_result','_continue_game','_get_status_data','_get_cards_num','_get_card_name','_get_card_image','_get_card_num_powers','_get_card_power_score','_get_card_power_name','_get_callbuffer','_action_check_payment','_choose_pay_prompt','_action_check_goods','_action_check_consume','_action_check_start','_can_prestige','_action_check_upgrade']"
