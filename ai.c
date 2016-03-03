@@ -46,8 +46,9 @@ static net role;
  */
 static int role_hit, role_miss;
 static double role_avg;
-
+#ifdef EVAL_CACHE
 static int eval_cache_hit, eval_cache_miss;
+#endif
 
 /*
  * Size of evaluator neural net.
@@ -1605,11 +1606,12 @@ typedef struct eval_cache
 
 } eval_cache;
 
+#ifdef EVAL_CACHE
 /*
  * Hash table for cached evaluation results.
  */
 static eval_cache *eval_hash[65536];
-
+#endif
 /*
  * Hash table for cached opponent placement results.
  */
@@ -1692,7 +1694,7 @@ static uint64_t gen_hash(unsigned char *k, int length)
 	return c;
 }
 
-
+#ifdef EVAL_CACHE
 /*
  * Look up a game state in the result cache.
  */
@@ -1799,6 +1801,7 @@ static eval_cache *lookup_eval(game *g, int who)
 	/* Return pointer */
 	return e_ptr;
 }
+#endif
 
 /*
  * Lookup a score in the opponent placement cache.
@@ -1871,7 +1874,7 @@ static eval_cache *lookup_opp_place(game *g, int who, int opp, int which,
 	/* Return pointer */
 	return e_ptr;
 }
-
+#ifdef EVAL_CACHE
 /*
  * Delete the entries in the evaluation cache.
  */
@@ -1897,7 +1900,7 @@ static void clear_eval_cache(void)
 		}
 	}
 }
-
+#endif
 /*
  * Delete the entries in the opponent placement cache.
  */
@@ -2294,7 +2297,7 @@ static double eval_game(game *g, int who)
 	int max = 0, max_build = 0, clock;
 	int leader[MAX_PLAYER][MAX_LEADER];
 	double score;
-
+#ifdef EVAL_CACHE
 	/* Lookup game state in cached results */
 	e_ptr = lookup_eval(g, who);
 
@@ -2310,7 +2313,7 @@ static double eval_game(game *g, int who)
 		eval_cache_miss++;
 	}
 #endif
-
+#endif
 	/* Get end-of-game score */
 	score_game(g);
 
@@ -2547,7 +2550,7 @@ static double eval_game(game *g, int who)
 	score = eval.win_prob[0] + p_ptr->end_vp * 0.001 +
 	               hand * 0.0002 + (p_ptr->winner ? 0.2 : 0) + 0.1 -
 		       (g->game_over ? 0.1 : 0);
-
+#ifdef EVAL_CACHE
 #ifdef DEBUG
 	if (e_ptr->score != -1 && fabs(e_ptr->score - score) > 0.0001)
 	{
@@ -2557,9 +2560,9 @@ static double eval_game(game *g, int who)
 
 	/* Save result in cache */
 	e_ptr->score = score;
-
+#endif
 	/* Return score */
-	return e_ptr->score;
+	return score;
 }
 
 /*
@@ -2570,10 +2573,10 @@ static void perform_training(game *g, int who, double *desired)
 	double target[MAX_PLAYER];
 	double lambda = 1.0;
 	int i;
-
+#ifdef EVAL_CACHE
 	/* Clear cached results of eval network */
 	clear_eval_cache();
-
+#endif
 	/* Get current state */
 	eval_game(g, who);
 
