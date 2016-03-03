@@ -224,27 +224,27 @@ void compute_net(net *learn)
 			}
 #else
 			/* Check for increase by one */
-			if (learn->input_value[i] - learn->prev_input[i] == 1)
+			if (learn->input_value[i] - learn->prev_input[i] == 2)
 			{
 				/* Add weight value to sum */
 				for (j = 0; j < learn->num_hidden; j++)
 				{
 					/* Adjust sum */
 					learn->hidden_sum[j] +=
-					             learn->hidden_weight[i][j];
+					             2 * learn->hidden_weight[i][j];
 				}
 			}
 
 			/* Check for decrease by one */
 			else if (learn->input_value[i] -
-			         learn->prev_input[i] == -1)
+			         learn->prev_input[i] == -2)
 			{
 				/* Subtract weight value from sum */
 				for (j = 0; j < learn->num_hidden; j++)
 				{
 					/* Adjust sum */
 					learn->hidden_sum[j] -=
-					             learn->hidden_weight[i][j];
+					             2 * learn->hidden_weight[i][j];
 				}
 			}
 
