@@ -13,15 +13,19 @@ The original project page can be found here: http://keldon.net/rftg/
 Put `cards.txt`, `campaign.txt` and `images.data` in the main directory of the repository.
 
 Build HTML GUI in the local directory
+
     make
 
 Build and install in the specified directory
+
     INSTALLDIR=<http served directory> make install
 
 Build a zipped webapp package
+
     make rftg_webapp.zip
 
 Build the standard desktop version
+
     make rftg
 
 The resulting files should be accessed through a http server. Using local file access may work to some extent depending on the browser used, but is not recommended.
