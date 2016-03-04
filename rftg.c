@@ -1421,9 +1421,25 @@ void get_player_state(game *g, int who)
 //	printf("\n");
 }
 
-static void get_state(game *g) {
+static int get_trade_value(game *g, card *c_ptr, int no_bonus)
+{
+	/* Check for "any" kind */
+	if (c_ptr->d_ptr->good_type == GOOD_ANY)
+	{
+		int v1 = trade_value(g, player_us, c_ptr, GOOD_NOVELTY, no_bonus);
+		int v2 = trade_value(g, player_us, c_ptr, GOOD_RARE, no_bonus);
+		int v3 = trade_value(g, player_us, c_ptr, GOOD_GENE, no_bonus);
+		int v4 = trade_value(g, player_us, c_ptr, GOOD_ALIEN, no_bonus);
+		if (v2 > v1) v1 = v2;
+		if (v4 > v3) v3 = v4;
+		return v1 > v3 ? v1 : v3;
+	}
+	return trade_value(g, player_us, c_ptr, c_ptr->d_ptr->good_type, no_bonus);
+}
+
+static void get_state(game *g, int get_trade_values) {
 	card *c_ptr;
-	int i, display_deck = 0, display_discard = 0, display_pool;
+	int i, display_deck = 0, display_discard = 0, display_pool, good;
 	add_data(MSG_GAMESTATE);
 
 	/* Get chips in VP pool */
@@ -1448,7 +1464,10 @@ static void get_state(game *g) {
 		add_data(c_ptr->where == WHERE_HAND ? -1 : (c_ptr->owner + g->num_players - player_us) % g->num_players);
 		add_data(c_ptr->where == WHERE_HAND ? (c_ptr->start_where != WHERE_HAND ||
 				    c_ptr->start_owner != c_ptr->owner ? 200000 : 0) + (c_ptr->d_ptr->type == TYPE_DEVELOPMENT ? 100000 : 0) + c_ptr->d_ptr->cost * 10000 + i : c_ptr->order * 10000 + i);
-                add_data(c_ptr->num_goods);
+                good = c_ptr->num_goods;
+                if (good && c_ptr->owner == player_us && get_trade_values)
+			good |= get_trade_value(g, c_ptr, get_trade_values > 1) << 16;
+                add_data(good);
                 /* Check for VP bonuses */
                 if (c_ptr->where == WHERE_ACTIVE && c_ptr->d_ptr->num_vp_bonus)
                 {
@@ -1459,7 +1478,6 @@ static void get_state(game *g) {
                 {
                         add_data(-1);
                 }
-                
 
 	}
 
@@ -1508,10 +1526,11 @@ static void gui_make_choice(game *g, int who, int type, int list[], int *nl,
                            int special[], int *ns, int arg1, int arg2, int arg3)
 {
 	int i;
+        int get_trade_values = type == CHOICE_TRADE ? arg1 ? 2 : 1 : 0;
 
 	/* Auto save */
 	auto_save(g, who);
-	get_state(g);
+	get_state(g, get_trade_values);
 
 	add_data(MSG_CHOICE);
 	add_data(type);
@@ -2020,7 +2039,7 @@ static void run_game(void)
 		auto_save(&real_game, player_us);
 
 		add_data(MSG_GAMEOVER);
-		get_state(&real_game);
+		get_state(&real_game, 0);
 
 	}
 }

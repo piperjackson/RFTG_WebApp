@@ -58,6 +58,16 @@ div.vptooltip {
     text-align: center;
     font-size: 15px;
 }
+div.tradevalue {
+    color: white;
+    position:absolute;
+    left:55px;
+    top:75px;
+    width:25px;
+    height:20px;
+    text-align: center;
+    font-size: 18px;
+}
 img.good {
     width:150px;
     position:absolute;
@@ -1272,6 +1282,7 @@ var GUI = (function() {
       if (selectable_cards[c.index] === 'discard')
         txt += '<img class="discard" src="' + image_from_data(3000 + ICON.DISCARD) + '">';
       if (c.vp !== undefined) txt += '<div class="vptooltip">'+c.vp+'</div>';
+      if (c.trade_value) txt += '<div class="tradevalue">$'+c.trade_value+'</div>';
       txt += '</div>';
       return txt;
     }
@@ -1438,7 +1449,8 @@ var GUI = (function() {
             index: array[i],
             image: array[i + 1],
             sortkey: array[i + 3],
-            num_goods: array[i + 4],
+            num_goods: array[i + 4] & 0xffff,
+            trade_value: array[i + 4] >> 16,
             vp: array[i + 5] >= 0 ? array[i + 5] : undefined,
           };
           decks[where].push(card);
