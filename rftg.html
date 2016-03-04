@@ -20,11 +20,15 @@
     src: url(fonts/Oswald-DemiBold.ttf);
     font-weight: bold;
 }
-      body {
-        font-family: Oswald, arial;
-        margin: 0;
-        padding: none;
-      }
+body {
+    font-family: Oswald, arial;
+    margin: 0;
+    padding: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 @-webkit-keyframes popmove {
     from { -webkit-transform: scale(1.4);}
     to { -webkit-transform: scale(1);}
@@ -212,10 +216,6 @@ padding: 0 10px;
 margin: 1px;
 font-size: 30px;
 font-family: Oswald, arial;
--webkit-user-select: none;
--moz-user-select: none;
--ms-user-select: none;
-user-select: none;
 cursor: default;
 }
 button:hover, .menu div:hover, span.modalopt:hover {
@@ -252,6 +252,39 @@ bottom:0;
 }
 .modalopt.selected_1 img.buttonicon_prestige {
 display:inline-block;
+}
+.gamelog {
+text-align: left;
+border: 2px solid #333; background: #666;
+opacity:.95;
+border-radius: 10px;
+color: #ccc;
+padding: 0 10px;
+margin: 1px;
+font-size: 16px;
+font-family: Oswald, arial;
+-webkit-user-select: text;
+-moz-user-select: text;
+-ms-user-select: text;
+user-select: text;
+height:640px;
+width:400px;
+overflow-y:scroll;
+position:absolute;
+right:0;
+z-index:1;
+}
+.logline.em {
+text-align: center;
+font-weight:bold;
+color: #f66;
+}
+.logline.phase {
+text-align: center;
+color: #f66;
+}
+.logline.discard, .logline.draw, .logline.verbose {
+color: #888;
 }
 .player {
 overflow: hidden;
@@ -315,6 +348,10 @@ width: 100px;
 <div class="screen" id="gamescreen" hidden>
 <div style="text-align:right">
 <button id="restart_undo" data-accel="ctrl-90" onclick="GUI.do_undo(GUI.RESTART.UNDO)">Undo</button>
+<span style="position:relative;display:inline-block">
+<button onclick="var m=document.getElementById('gamelog');m.hidden=!m.hidden;m.scrollTop=m.scrollHeight">Log</button><div class="gamelog" id="gamelog" hidden style="">
+<table id="gamelogtext"></table>
+</div></span>
 <span style="position:relative;display:inline-block" onclick="var m=document.getElementById('menu');m.hidden=!m.hidden">
 <button id="menu_button"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="2 2 20 20">
 <path style="fill:#ccc" d="M6,15h12c0.553,0,1,0.447,1,1v1c0,0.553-0.447,1-1,1H6c-0.553,0-1-0.447-1-1v-1C5,15.447,5.447,15,6,15z M5,11v1
@@ -1338,6 +1375,7 @@ var GUI = (function() {
   var do_undo = GUI.do_undo = function(v) {
     //    if (!game_over && (v === RESTART.NEW || v === RESTART.UNDO_GAME))
     //	if (!confirm(v === RESTART.NEW ? 'New Game' : 'Restart Game')) return;
+    clear_log();
     game_over = false;
     no_select();
     display();
@@ -1349,78 +1387,126 @@ var GUI = (function() {
   }
 
   function get_status() {
+    var MSG = {
+      CARDINFO:0,
+      GAMESTATE:1,
+      LOGLINE:2,
+      CHOICE:3,
+      GAMEOVER:4,
+    };
     var ptr = Module._get_status_data();
-    var array = Module.HEAP32.subarray((ptr >> 2), (ptr >> 2) + 10000);
+    var datasize = Module._get_status_data_size();
+    var array = Module.HEAP32.subarray((ptr >> 2), (ptr >> 2) + datasize);
     var i = 0;
-    if (array[i] >= 0) {
-      var nl = array[i + 1];
-      var ns = array[i + 2];
-      select = {
-        type: array[i],
-        arg1: array[i + 3],
-        arg2: array[i + 4],
-        arg3: array[i + 5],
-        list: [],
-        special: [],
+    select = undefined;
+    while (i < datasize) {
+      var msgtype = array[i++];
+      if (msgtype == MSG.CHOICE) {
+        var nl = array[i + 1];
+        var ns = array[i + 2];
+        select = {
+          type: array[i],
+          arg1: array[i + 3],
+          arg2: array[i + 4],
+          arg3: array[i + 5],
+          list: [],
+          special: [],
+        }
+        i += 6;
+        for (var j = 0; j < nl; j++) select.list.push(array[i++]);
+        for (var j = 0; j < ns; j++) select.special.push(array[i++]);
+      } else if (msgtype == MSG.GAMEOVER) {
+        game_over = true;
+      } else if (msgtype == MSG.GAMESTATE) {
+        decks = { hand: [] };
+        for (var j = 0; j < num_players; j++) decks['table' + j] = [];
+        while (array[i] >= 0) {
+          var where = array[i + 2];
+          where = where < 0 ? 'hand' : 'table' + where;
+          var card = {
+            index: array[i],
+            image: array[i + 1],
+            sortkey: array[i + 3],
+            num_goods: array[i + 4]
+          };
+          decks[where].push(card);
+          i += 5;
+        }
+        i++;
+        game_status = {
+          deck_size: array[i++],
+          discard_size: array[i++],
+          vp_stack: array[i++],
+          phases: [],
+          player: [],
+        }
+        for (var j = 0; j < (advanced ? 7 : 5); j++) {
+          var v = array[i++];
+          game_status.phases[j] = v > 0;
+          if (v > 1) game_status.current_phase = j;
+        }
+        for (var j = 0; j < num_players; j++) {
+          var t;
+          game_status.player.push({
+            action: array[i++],
+            second_action: array[i++],
+            vp: array[i++],
+            total_vp: array[i++],
+            hand_size: array[i++],
+            military: array[i++],
+            prestige: (t = array[i++]) >> 3,
+            prestige_leader: (t & 4) !== 0,
+            prestige_turn: (t & 2) !== 0,
+            prestige_used: (t & 1) !== 0,
+            goal_vp: array[i++],
+            world_vp: array[i++],
+            dev_vp: array[i++],
+            dev6_vp: array[i++],
+            table_size: decks['table'+j].length,
+          });
+        }
+      } else if (msgtype == MSG.LOGLINE) {
+        add_log({
+          tag: Module.UTF8ToString(array[i++]),
+          msg: Module.UTF8ToString(array[i++])
+        });
+      } else if (msgtype == MSG.CARDINFO) {
+        var num = array[i++];
+        for (var k = 0; k < num; k++) {
+        var c = {
+          name: Module.UTF8ToString(array[i++]),
+          image: array[i++],
+          powers: []
+        };
+        var npow = array[i++];
+        for (var j = 0; j < npow; j++) {
+          c.powers[j] = {
+            name: Module.UTF8ToString(array[i++]),
+            score: array[i++]
+          };
+        }
+        card_info[k] = c;
+        }
+      } else {
+          console.log("Unknown message type: " + msgtype);
+          return;
       }
-      i += 6;
-      for (var j = 0; j < nl; j++) select.list.push(array[i++]);
-      for (var j = 0; j < ns; j++) select.special.push(array[i++]);
-    } else {
-      select = undefined;
-      game_over = true;
-      i++;
-    }
-    decks = { hand: [] };
-    for (var j = 0; j < num_players; j++) decks['table' + j] = [];
-    while (array[i] >= 0) {
-      var where = array[i + 2];
-      where = where < 0 ? 'hand' : 'table' + where;
-      var card = {
-        index: array[i],
-        image: array[i + 1],
-        sortkey: array[i + 3],
-        num_goods: array[i + 4]
-      };
-      decks[where].push(card);
-      i += 5;
-    }
-    i++;
-    game_status = {
-      deck_size: array[i++],
-      discard_size: array[i++],
-      vp_stack: array[i++],
-      phases: [],
-      player: [],
-    }
-    for (var j = 0; j < (advanced ? 7 : 5); j++) {
-      var v = array[i++];
-      game_status.phases[j] = v > 0;
-      if (v > 1) game_status.current_phase = j;
-    }
-    for (var j = 0; j < num_players; j++) {
-      var t;
-      game_status.player.push({
-        action: array[i++],
-        second_action: array[i++],
-        vp: array[i++],
-        total_vp: array[i++],
-        hand_size: array[i++],
-        military: array[i++],
-        prestige: (t = array[i++]) >> 3,
-        prestige_leader: (t & 4) !== 0,
-        prestige_turn: (t & 2) !== 0,
-        prestige_used: (t & 1) !== 0,
-        goal_vp: array[i++],
-        world_vp: array[i++],
-        dev_vp: array[i++],
-        dev6_vp: array[i++],
-        table_size: decks['table'+j].length,
-      });
     }
     do_select();
     if (localStorage)
       localStorage.setItem('autosave.rftg', FS.readFile('autosave.rftg', { encoding: 'utf8' }));
+  }
+  function add_log(line) {
+    var table = document.getElementById('gamelogtext');
+    var cell = table.insertRow(-1).insertCell(0);
+    cell.classList.add('logline');
+    if (line.tag) cell.classList.add(line.tag);
+    cell.innerHTML = line.msg;
+    var logdiv = document.getElementById('gamelog');
+    logdiv.scrollTop = logdiv.scrollHeight;
+  }
+  function clear_log() {
+    document.getElementById('gamelogtext').innerHTML = '';
   }
 
   function read_images(i8) {
@@ -1440,26 +1526,6 @@ var GUI = (function() {
     }
   }
 
-  function get_card_info() {
-    var num = Module._get_cards_num();
-    var get_card_name = Module.cwrap('get_card_name', 'string', ['number']);
-    var get_card_power_name = Module.cwrap('get_card_power_name', 'string', ['number', 'number']);
-    for (var i = 0; i < num; i++) {
-      var c = {
-        name: get_card_name(i),
-        image: Module._get_card_image(i),
-        powers: []
-      };
-      var npow = Module._get_card_num_powers(i);
-      for (var j = 0; j < num; j++) {
-        c.powers[j] = {
-          score: Module._get_card_power_score(i, j),
-          name: get_card_power_name(i, j)
-        };
-      }
-      card_info[i] = c;
-    }
-  }
   GUI.print = function(text) {
     if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
     console.log(text);
@@ -1488,7 +1554,6 @@ var GUI = (function() {
   GUI.firstRun = function() {
     read_images(images_data = FS.readFile('images.data'));
     set_screen('gamescreen');
-    get_card_info();
     get_status();
     display();
     if (game_over) set_screen('menuscreen');

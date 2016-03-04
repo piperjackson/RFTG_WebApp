@@ -37,6 +37,56 @@
 #define RESTART_REPLAY     11
 #define RESTART_CURRENT    12
 
+
+/* API for sending game info to JS */
+#define MSG_CARDINFO 0
+#define MSG_GAMESTATE 1
+#define MSG_LOGLINE 2
+#define MSG_CHOICE 3
+#define MSG_GAMEOVER 4
+
+#define STATUS_DATA_SIZE     100000
+#define STATUS_DATA_STR_SIZE 500000
+
+static int *status_data, status_data_ptr, status_data_str_ptr;
+static char *status_data_str;
+static void reset_status_data(void) {
+	status_data_ptr = 0;
+	status_data_str_ptr = 0;
+}
+static void add_data(int v) {
+	status_data[status_data_ptr++] = v;
+}
+static void add_data_str(char *v) {
+	char *dst = status_data_str + status_data_str_ptr;
+	status_data[status_data_ptr++] = (int)dst;
+	status_data_str_ptr += strlen(v) + 1;
+	strcpy(dst, v);
+}
+int *get_status_data(void) {
+	printf("buffers: %d %d\n", status_data_ptr, status_data_str_ptr);
+	return status_data;
+}
+int get_status_data_size(void) {
+	return status_data_ptr;
+}
+int last_message_send = 0, message_count = 0;
+void add_message(char *tag, char *msg) {
+	if (message_count++ < last_message_send) return;
+	last_message_send++;
+	add_data(MSG_LOGLINE);
+	add_data_str(tag);
+	add_data_str(msg);
+}
+
+/* API for getting the user input from JS */
+static int *selection_result_ptr;
+static int *selection_result_len_ptr;
+int *selection_result(int len) {
+	*selection_result_len_ptr += len;
+	return selection_result_ptr;
+}
+
 /*
  * User options.
  */
@@ -286,7 +336,7 @@ int is_round_boundary(int advanced, int *p)
  */
 void message_add(game *g, char *msg)
 {
-	printf("message: %s",msg);
+	add_message("", msg);
 }
 
 /*
@@ -294,7 +344,7 @@ void message_add(game *g, char *msg)
  */
 void message_add_formatted(game *g, char *msg, char *tag)
 {
-	printf("message <%s>: %s",tag,msg);
+	add_message(tag, msg);
 }
 /*
  * Add a private message to the message buffer.
@@ -1238,21 +1288,6 @@ static void choice_done(game *g)
 	/* Clear redo possibility */
 	max_undo = num_undo;
 }
-/*
- * Reset status information for a player.
- */
-
-static int status_data[10000], status_data_ptr;
-static void reset_status_data(void) { status_data_ptr = 0; }
-static void add_data(int v) { status_data[status_data_ptr++] = v; }
-int *get_status_data(void) { return status_data; }
-static int *selection_result_ptr;
-static int *selection_result_len_ptr;
-int *selection_result(int len) {
-	*selection_result_len_ptr += len;
-	return selection_result_ptr;
-}
-
 
 void get_vp(game *g, int who)
 {
@@ -1287,7 +1322,7 @@ void get_vp(game *g, int who)
 	g->oort_kind = kind;
 }
 
-void reset_status(game *g, int who)
+void get_player_state(game *g, int who)
 {
 	int i;
 	int act1 = -1, act2 = -1, vp, end_vp, prestige;
@@ -1389,6 +1424,7 @@ void reset_status(game *g, int who)
 static void get_state(game *g) {
 	card *c_ptr;
 	int i, display_deck = 0, display_discard = 0, display_pool;
+	add_data(MSG_GAMESTATE);
 
 	/* Get chips in VP pool */
 	display_pool = g->vp_pool;
@@ -1451,8 +1487,7 @@ static void get_state(game *g) {
 	/* Loop over players */
 	for (i = 0; i < g->num_players; i++)
 	{
-		/* Reset status information for player */
-		reset_status(g, (i + player_us) % g->num_players);
+		get_player_state(g, (i + player_us) % g->num_players);
 	}
 }
 
@@ -1466,9 +1501,9 @@ static void gui_make_choice(game *g, int who, int type, int list[], int *nl,
 
 	/* Auto save */
 	auto_save(g, who);
+	get_state(g);
 
-	reset_status_data();
-//	printf("TYPE: %d\n", type);
+	add_data(MSG_CHOICE);
 	add_data(type);
 	add_data(nl ? *nl : 0);
 	add_data(ns ? *ns : 0);
@@ -1477,9 +1512,10 @@ static void gui_make_choice(game *g, int who, int type, int list[], int *nl,
 	add_data(arg3);
 	if (nl) for (i = 0; i < *nl; i++) add_data(list[i]);
 	if (ns) for (i = 0; i < *ns; i++) add_data(special[i]);
-	get_state(g);
+
 	selection_result_len_ptr = &g->p[who].choice_size;
 	selection_result_ptr = &g->p[who].choice_log[g->p[who].choice_size];
+
 	g->game_over = 1;
         restart_loop = RESTART_REDO_GAME;
 }
@@ -1973,15 +2009,14 @@ static void run_game(void)
 		/* Auto save */
 		auto_save(&real_game, player_us);
 
-		reset_status_data();
-		add_data(-1);
+		add_data(MSG_GAMEOVER);
 		get_state(&real_game);
 
 	}
 }
 
 
-
+void send_card_infos(void);
 
 /*
  * Setup windows, callbacks, etc, then let GTK take over.
@@ -2169,41 +2204,31 @@ int main(int argc, char *argv[])
 			restart_loop = RESTART_LOAD;
 		}
 	}
-
+	status_data = calloc(sizeof(*status_data), STATUS_DATA_SIZE);
+	status_data_str = calloc(sizeof(*status_data_str), STATUS_DATA_STR_SIZE);
+	
 	/* Run games */
 	run_game();
+
+	send_card_infos();
 
 	/* Exit */
 	return 0;
 }
 
 void continue_game(int loop) {
+	reset_status_data();
+	message_count = 0;
         if (loop < 0) {
                 choice_done(&real_game);
         } else {
                 restart_loop = loop;
+		last_message_send = 0;
         }
 	run_game();
 }
 
-int get_cards_num() {
-        return real_game.deck_size;
-}
-
-char *get_card_name(int i) {
-        return real_game.deck[i].d_ptr->name;
-}
-
-int get_card_image(int i) {
-	return real_game.deck[i].d_ptr->index;
-}
-
-int get_card_num_powers(int i) {
-        return real_game.deck[i].d_ptr->num_power;
-}
-
-static char buf[1024];
-static char *name_consume(power *o_ptr) {
+static char *name_consume(power *o_ptr, char *buf) {
                 char *name, buf2[1024];
 		/* Check for simple powers */
 		if (o_ptr->code == P4_DRAW)
@@ -2389,7 +2414,7 @@ static char *name_consume(power *o_ptr) {
         return buf;
 }
 
-static char *name_produce(design *d_ptr, power *o_ptr) {
+static char *name_produce(design *d_ptr, power *o_ptr, char *buf) {
 		/* Clear string describing power */
 		strcpy(buf, "");
 
@@ -2471,7 +2496,7 @@ static char *name_produce(design *d_ptr, power *o_ptr) {
                 return buf;
 }
 
-char *name_settle(power *o_ptr) {
+char *name_settle(power *o_ptr, char *buf) {
 		/* Check for simple powers */
 		if (o_ptr->code & P3_PLACE_TWO)
 		{
@@ -2507,11 +2532,12 @@ char *name_settle(power *o_ptr) {
 }
 
 char *get_card_power_name(int i, int p) {
+	char buf[1024];
         design *d_ptr = real_game.deck[i].d_ptr;
         power *o_ptr = &real_game.deck[i].d_ptr->powers[p];
-        if (o_ptr->phase == PHASE_CONSUME) return name_consume(o_ptr);
-        if (o_ptr->phase == PHASE_PRODUCE) return name_produce(d_ptr, o_ptr);
-	if (o_ptr->phase == PHASE_SETTLE) return name_settle(o_ptr);
+        if (o_ptr->phase == PHASE_CONSUME) return name_consume(o_ptr, buf);
+        if (o_ptr->phase == PHASE_PRODUCE) return name_produce(d_ptr, o_ptr, buf);
+	if (o_ptr->phase == PHASE_SETTLE) return name_settle(o_ptr, buf);
         return "";
 }
 
@@ -2522,6 +2548,7 @@ int get_card_power_score(int i, int p) {
         return 0;
 }
 
+char buf[1024];
 char *choose_pay_prompt(int which, int mil_only, int mil_bonus)
 {
 	game *g = &real_game;
@@ -2660,7 +2687,29 @@ char *choose_pay_prompt(int which, int mil_only, int mil_bonus)
 	return buf;
 }
 
+/* Check if the human player can use a prestige action */
 int can_prestige(void) {
-    if (real_game.expanded != 3 || real_game.p[player_us].prestige_action_used) return 0;
-    return real_game.p[player_us].prestige > 0 ? 3 : 1;
+	/* Not a BoW game */
+	if (real_game.expanded != 3) return 0;
+
+	/* Presitge action already used */
+	if (real_game.p[player_us].prestige_action_used) return 0;
+
+	/* Returns 3 if the player can also pay for prestige actions */
+	return real_game.p[player_us].prestige > 0 ? 3 : 1;
+}
+
+void send_card_infos() {
+	int i, j;
+	add_data(MSG_CARDINFO);
+	add_data(real_game.deck_size);
+	for (i = 0; i < real_game.deck_size; i++) {
+		add_data_str(real_game.deck[i].d_ptr->name);
+		add_data(real_game.deck[i].d_ptr->index);
+		add_data(real_game.deck[i].d_ptr->num_power);
+		for (j = 0; j < real_game.deck[i].d_ptr->num_power; j++) {
+			add_data_str(get_card_power_name(i, j));
+			add_data(get_card_power_score(i, j));
+		}
+	}
 }
