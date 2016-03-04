@@ -1440,8 +1440,6 @@ static void get_state(game *g) {
 		/* Check for card in discard pile */
 		if (c_ptr->where == WHERE_DISCARD) display_discard++;
 
-//		printf("%3d %d %d %d %d %d %s\n", i, c_ptr->owner, c_ptr->where, c_ptr->d_ptr->cost, c_ptr->order, c_ptr->d_ptr->index, c_ptr->d_ptr->name);
-
 		/* Skip unowned cards */
 		if (!(c_ptr->where == WHERE_ACTIVE) && !(c_ptr->where == WHERE_HAND && c_ptr->owner == player_us)) continue;
 
@@ -1451,8 +1449,20 @@ static void get_state(game *g) {
 		add_data(c_ptr->where == WHERE_HAND ? (c_ptr->start_where != WHERE_HAND ||
 				    c_ptr->start_owner != c_ptr->owner ? 200000 : 0) + (c_ptr->d_ptr->type == TYPE_DEVELOPMENT ? 100000 : 0) + c_ptr->d_ptr->cost * 10000 + i : c_ptr->order * 10000 + i);
                 add_data(c_ptr->num_goods);
+                /* Check for VP bonuses */
+                if (c_ptr->where == WHERE_ACTIVE && c_ptr->d_ptr->num_vp_bonus)
+                {
+                        /* Count VPs from this card */
+                        add_data(get_score_bonus(g, c_ptr->owner, i));
+                }
+                else
+                {
+                        add_data(-1);
+                }
+                
+
 	}
-//	printf("Deck: %d, Discard: %d, VP Pool: %d\n", display_deck, display_discard, display_pool);
+
 	add_data(-1);
 	add_data(display_deck);
 	add_data(display_discard);

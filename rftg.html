@@ -48,6 +48,16 @@ img.cardface {
     height: 280px;
     position:absolute;
 }
+div.vptooltip {
+    position:absolute;
+    background-color: white;
+    left:51px;
+    top:27px;
+    width:13px;
+    height:19px;
+    text-align: center;
+    font-size: 15px;
+}
 img.good {
     width:150px;
     position:absolute;
@@ -1261,6 +1271,7 @@ var GUI = (function() {
       }
       if (selectable_cards[c.index] === 'discard')
         txt += '<img class="discard" src="' + image_from_data(3000 + ICON.DISCARD) + '">';
+      if (c.vp !== undefined) txt += '<div class="vptooltip">'+c.vp+'</div>';
       txt += '</div>';
       return txt;
     }
@@ -1375,11 +1386,11 @@ var GUI = (function() {
   var do_undo = GUI.do_undo = function(v) {
     //    if (!game_over && (v === RESTART.NEW || v === RESTART.UNDO_GAME))
     //	if (!confirm(v === RESTART.NEW ? 'New Game' : 'Restart Game')) return;
-    clear_log();
     game_over = false;
     no_select();
     display();
     setTimeout(function() {
+      clear_log();
       Module._continue_game(v);
       get_status();
       display();
@@ -1427,10 +1438,11 @@ var GUI = (function() {
             index: array[i],
             image: array[i + 1],
             sortkey: array[i + 3],
-            num_goods: array[i + 4]
+            num_goods: array[i + 4],
+            vp: array[i + 5] >= 0 ? array[i + 5] : undefined,
           };
           decks[where].push(card);
-          i += 5;
+          i += 6;
         }
         i++;
         game_status = {
