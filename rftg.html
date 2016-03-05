@@ -29,6 +29,9 @@ body {
     -ms-user-select: none;
     user-select: none;
 }
+img {
+    -webkit-touch-callout: none;
+}
 @-webkit-keyframes popmove {
     from { -webkit-transform: scale(1.4);}
     to { -webkit-transform: scale(1);}
@@ -678,12 +681,10 @@ var GUI = (function() {
     if (true || ('nogoals' in url_params)) params.push('-nog');
     if (true || ('notakeovers' in url_params)) params.push('-not');
     history.replaceState({}, document.title, window.location.pathname);
-    console.log(url_params, params);
   } else {
     var s = localStorage && localStorage.getItem('autosave.rftg');
     if (s) {
       var m = s.match(/^RFTG Save\n0.9.4\n\d+\n(\d+) (\d+)\n(\d+) /);
-      console.log(m);
       if (m) {
         num_players = parseInt(m[1]);
         exp_level = parseInt(m[2]);
@@ -708,15 +709,14 @@ var GUI = (function() {
     return 'data:image/jpeg;base64,' + window.btoa(binary);
   }
 
-  function target_card(ev) {
-    var c = ev.target;
+  function target_card(c) {
     while (!c.id && c.parentNode) c = c.parentNode;
     if (c.id && c.id.match(/^card\d+$/)) return c;
     return undefined;
   }
   var do_click = GUI.do_click = function(ev) {
     var c, t;
-    if (!(c = target_card(ev))) return;
+    if (!(c = target_card(ev.target))) return;
     if (!(t = selectable_cards[card_id(c)])) return;
     if (t === 'good') {
       var notsel = c.querySelector('.good:not(.selected)');
@@ -730,10 +730,26 @@ var GUI = (function() {
   }
   document.getElementById('board').addEventListener('contextmenu', function(ev) {
     var c;
-    if (!(c = target_card(ev))) return;
+    if (!(c = target_card(ev.target))) return;
     card_popup(card_id(c));
     ev.preventDefault();
   });
+  var long_touch;
+  function do_touch(ev) {
+    if (ev.touches.length === 1) {
+      var c = target_card(ev.touches[0].target);
+      if (c) long_touch = window.setTimeout(function() {
+        card_popup(card_id(c));
+        long_touch = undefined;
+      }, 1000);
+    } else {
+      if (long_touch) window.clearTimeout(long_touch);
+      long_touch = undefined;
+    }
+  }
+  document.getElementById('board').addEventListener('touchstart', do_touch);
+  document.getElementById('board').addEventListener('touchend', do_touch);
+  document.getElementById('board').addEventListener('touchcancel', do_touch);
 
   function set_prompt(txt) {
     document.getElementById('actionprompt').innerHTML = txt;
