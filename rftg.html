@@ -1225,8 +1225,7 @@ var GUI = (function() {
   }
   var lastWidth = 0;
   window.addEventListener("resize", function() {
-    if (window.innerWidth === lastWidth) return;
-    display();
+    if (window.innerWidth !== lastWidth) display();
     update_scroll();
   });
   var keyAccels = {};
