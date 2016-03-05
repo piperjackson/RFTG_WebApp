@@ -1223,7 +1223,9 @@ var GUI = (function() {
       window.removeEventListener("scroll", update_scroll);
     }
   }
+  var lastWidth = 0;
   window.addEventListener("resize", function() {
+    if (window.innerWidth === lastWidth) return;
     display();
     update_scroll();
   });
@@ -1348,6 +1350,7 @@ var GUI = (function() {
       }).join('');
       document.getElementById('gamesummary').innerHTML = t;
     }
+    lastWidth = window.innerWidth;
     for (var j in decks) {
       var cardelem = document.getElementById(j);
       var cardspacing = decks[j].length > 1 ? (cardelem.offsetWidth - 210) / (decks[j].length - 1) : 0;
