@@ -144,12 +144,30 @@ div.card.disabled {
 }
 #gameoverpopup table {
     margin: 0 auto;
+    border: 2px solid black;
+    border-collapse: collapse;
 }
 #gameoverpopup tr.player0 {
     font-size: 40px;
 }
-#gameoverpopup th {
+#gameoverpopup tr.head {
     font-size: 20px;
+    background-color: #777;
+}
+#gameoverpopup td {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    border: 1px solid #777;
+}
+#gameoverpopup tr span {
+    position: relative;
+}
+#gameoverpopup tr img {
+    position: absolute;
+    width: 46px;
+    height: 46px;
+    top: 2px; left: 2px;
 }
 
 .centeredscreen_o {
@@ -1289,16 +1307,16 @@ var GUI = (function() {
 
     function fill_game_summary() {
       function makesumicon(id, content) {
-        var bg = id !== undefined ? ' style="background-image: url(' + image_from_data(3000 + id) + ')"' : '';
-        return '<th class="icon"' + bg + '>' + (content || '&nbsp;') + '</th>';
+        var bg = id !== undefined ? '<img src="' + image_from_data(3000 + id) + '">' : '';
+        return '<td>' + bg + '<span>' + (content || '&nbsp;') + '</span></td>';
       }
-      var t = '<tr><th></th>';
+      var t = '<tr class="head"><td></td>';
       t += makesumicon(ICON.VP);
       t += makesumicon(5);
       t += makesumicon(3);
       t += makesumicon(3, '6');
       if (exp_level === 3) t += makesumicon(ICON.PRESTIGE);
-      t += '<th>Sum</th>';
+      t += '<td>Sum</td>';
       var players = [];
       var score = function(a) { return game_status.player[a].total_vp * 1000 + game_status.player[a].hand_size; };
       for (var i = 0; i < num_players; i++) players.push(i);
