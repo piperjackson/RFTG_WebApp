@@ -508,6 +508,7 @@ Start world choice <select id="setting_revstart">
 <div id="cacheprogress"><div id="cachestatus1"></div></div>
 <div id="cachestatus2"></div>
 </div>
+<script>window.onerror = function(msg, src, line) { alert('ERROR ' + line + ': ' + msg); };</script>
 <script type='text/javascript'>
 var GUI = (function() {
   var GUI = {};
@@ -1590,14 +1591,12 @@ var GUI = (function() {
   }
   GUI.printErr = function(text) {
     if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+    alert(text);
     console.error(text);
   }
   GUI.params = function() {
     return params;
   }
-  window.onerror = function(event) {
-    alert('Exception thrown, see JavaScript console');
-  };
   GUI.initFS = function(FS) {
     var net_name = exp_level + '.' + num_players;
     if (advanced) net_name += 'a';

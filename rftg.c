@@ -364,7 +364,7 @@ void message_add_private(game *g, int who, char *msg, char *tag)
  */
 void display_error(char *msg)
 {
-	printf("error: %s\n",msg);
+	fprintf(stderr, "ERROR: %s\n",msg);
 }
 /*
  * Use simple random number generator.
