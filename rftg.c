@@ -1310,8 +1310,12 @@ void get_vp(game *g, int who)
 		else if (c_ptr->d_ptr->type == TYPE_DEVELOPMENT)
 			devs += c_ptr->d_ptr->vp;
 
-		if (c_ptr->d_ptr->num_vp_bonus)
-			dev6 += get_score_bonus(g, who, x);
+		if (c_ptr->d_ptr->num_vp_bonus) {
+			if (c_ptr->d_ptr->type == TYPE_WORLD)
+				worlds += get_score_bonus(g, who, x);
+			else if (c_ptr->d_ptr->type == TYPE_DEVELOPMENT)
+				dev6 += get_score_bonus(g, who, x);
+		}
 	}
         add_data(p_ptr->goal_vp);
 	add_data(worlds);

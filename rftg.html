@@ -1336,7 +1336,12 @@ var GUI = (function() {
       if (exp_level === 3) t += makesumicon(ICON.PRESTIGE);
       t += '<td>Sum</td>';
       var players = [];
-      var score = function(a) { return game_status.player[a].total_vp * 1000 + game_status.player[a].hand_size; };
+      var player_tiebreak = [];
+      for (var i = 0; i < num_players; i++) {
+        player_tiebreak[i] = game_status.player[i].hand_size;
+        decks['table'+i].forEach(function (e) { player_tiebreak[i] += e.num_goods; });
+      }
+      var score = function(a) { return game_status.player[a].total_vp * 1000 + player_tiebreak[a]; };
       for (var i = 0; i < num_players; i++) players.push(i);
       players.sort(function(a, b) { return score(b) - score(a); });
       t += players.map(function(e, i) {
