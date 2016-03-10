@@ -81,7 +81,7 @@ img.good {
     transition: top .5s linear;
 }
 img.good.selected {
-    border:1px solid yellow;
+    border:5px solid yellow;
 }
 img.discard {
     width: 100%;
@@ -103,7 +103,7 @@ div.card {
     transition: left 1s linear, top 1s linear;
 }
 div.card.selected {
-    border:2px solid yellow;
+    border:5px solid yellow;
 }
 div.card.disabled {
     filter: grayscale(1) brightness(.4);
@@ -1384,10 +1384,12 @@ var GUI = (function() {
     var txt = makeicon(ICON.DRAW, '<b>' + game_status.deck_size + '</b><br>Deck');
     txt += makeicon(ICON.HANDSIZE, '<b>' + game_status.discard_size + '</b><br>Discard');
     txt += makeicon(game_status.vp_stack > 0 ? ICON.VP : ICON.VP_EMPTY, '<b>' + game_status.vp_stack + '</b><br>VP');
-    txt += makeicon();
-    (advanced ? [23, 3, 3, 5, 5, 24, 9] : [23, 3, 5, 24, 9]).forEach(function(e, j) {
-      txt += makeactionicon(e, game_status.phases[j], j === game_status.current_phase);
-    });
+	if (game_status.phases.some(Boolean)){ // checks if phases have been selected
+		txt += makeicon();
+		(advanced ? [23, 3, 3, 5, 5, 24, 9] : [23, 3, 5, 24, 9]).forEach(function(e, j) {
+		  txt += makeactionicon(e, game_status.phases[j], j === game_status.current_phase);
+		});
+	}
     txt += makeicon();
     document.getElementById('game_status').innerHTML = txt;
     for (var j = 0; j < num_players; j++) {
