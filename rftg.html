@@ -6,7 +6,6 @@
     <link rel="icon" type="image/png" href="launcher-icon-2x.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="rftg.manifest.json">
-    <meta name="viewport" content="width=1500, user-scalable=yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>RFTG AI</title>
@@ -656,6 +655,8 @@ var GUI = (function() {
   var images = [];
   var images_data;
   var game_over = false;
+  var narrow = false;
+  var rowWidth = 6; // for narrow UI
   var select;
   var selectable_cards;
   var select_autoconfirm;
@@ -1292,9 +1293,16 @@ var GUI = (function() {
     }
 
     function makecard(c, i) {
-      var pos = i * cardspacing, top = 0, num_goods = c.num_goods;
+      var top = 0, num_goods = c.num_goods;
+      if (narrow) {
+      	var top = Math.floor(i/rowWidth) * 120;
+      	var pos = (i%rowWidth) * cardspacing;
+      } else {
+      	var pos = i * cardspacing;
+      }
       new_pos[c.index] = {
         left: pos,
+        top: top,
         row: j,
         goods: num_goods
       };
@@ -1357,8 +1365,19 @@ var GUI = (function() {
     lastWidth = window.innerWidth;
     for (var j in decks) {
       var cardelem = document.getElementById(j);
-      var cardspacing = decks[j].length > 1 ? (cardelem.offsetWidth - 210) / (decks[j].length - 1) : 0;
-      if (cardspacing > 210) cardspacing = 210;
+      var cardspacing = 0;
+      var deckLength = decks[j].length;
+      if (deckLength > 1){
+      	var ds = deckLength - 1;
+	if (narrow) ds = Math.min(rowWidth - 1, ds);
+	var cardspacing =  (cardelem.offsetWidth - 210) / ds;
+	if (cardspacing > 210) cardspacing = 210;
+      }
+      if (narrow) {
+      	var newHeight = 290;
+	if (deckLength > rowWidth) newHeight = 290 + (120 * Math.floor((deckLength-1) / rowWidth));
+	document.getElementById(j).style.height = newHeight + 'px';
+      }
       decks[j] = decks[j].sort(function(a, b) { return a.sortkey - b.sortkey; });
       cardelem.innerHTML = decks[j].map(makecard).join('');
     }
@@ -1367,7 +1386,7 @@ var GUI = (function() {
         var card = document.getElementById('card' + j);
         getComputedStyle(card).left;
         card.style.left = new_pos[j].left + 'px';
-        card.style.top = '0px';
+        card.style.top = new_pos[j].top + 'px';
         var goods = card.getElementsByClassName('good');
         for (var k = 0; k < goods.length; k++) {
           var gpos = 70 + k * 15;
@@ -1618,6 +1637,17 @@ var GUI = (function() {
     if (save) FS.createDataFile('/', 'autosave.rftg', save, true, true);
   }
   GUI.firstRun = function() {
+    var metaTag=document.createElement('meta');
+    metaTag.name = "viewport"
+    if (window.innerWidth > window.innerHeight) {
+      metaTag.content = "width=1500, initial-scale=1.0, user-scalable=yes";
+      narrow = false;
+    } else {
+      metaTag.content = "width=720, initial-scale=0.5, user-scalable=yes";
+      narrow = true;
+    }
+    document.getElementsByTagName('head')[0].appendChild(metaTag);
+
     read_images(images_data = FS.readFile('images.data'));
     set_screen('gamescreen');
     get_status();
