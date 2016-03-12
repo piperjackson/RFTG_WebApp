@@ -1368,14 +1368,12 @@ var GUI = (function() {
       var cardspacing = 0;
       var deckLength = decks[j].length;
       if (deckLength > 1){
-      	var ds = deckLength - 1;
-	if (narrow) ds = Math.min(rowWidth - 1, ds);
-	var cardspacing =  (cardelem.offsetWidth - 210) / ds;
+      	cardspacing = (cardelem.offsetWidth - 210) / ((narrow? Math.min(rowWidth, deckLength) : deckLength) - 1);
 	if (cardspacing > 210) cardspacing = 210;
       }
       if (narrow) {
       	var newHeight = 290;
-	if (deckLength > rowWidth) newHeight = 290 + (120 * Math.floor((deckLength-1) / rowWidth));
+	if (deckLength > rowWidth) newHeight = 290 + (120 * Math.floor((deckLength - 1) / rowWidth));
 	document.getElementById(j).style.height = newHeight + 'px';
       }
       decks[j] = decks[j].sort(function(a, b) { return a.sortkey - b.sortkey; });
