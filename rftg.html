@@ -228,6 +228,14 @@ td.icon, th.icon {
     text-align:center;
     border: 2px solid rgba(0,0,0,0);
 }
+td.goal img {
+    height:50px;
+    border-radius:5px;
+}
+td.goal1 {
+    filter: grayscale(1) brightness(.8);
+    -webkit-filter: grayscale(1) brightness(.8);
+}
 .icon.inactiveaction {
     opacity: .33;
     filter: grayscale(1);
@@ -295,24 +303,21 @@ display:inline-block;
 }
 .gamelog {
 text-align: left;
-border: 2px solid #333; background: #666;
-opacity:.95;
+border: 2px solid #333; background: rgba(100,100,100,0.95);
 border-radius: 10px;
 color: #ccc;
-padding: 0 10px;
+padding: 0 5px;
 margin: 1px;
-font-size: 16px;
+font-size: 20px;
 font-family: Oswald, arial;
 -webkit-user-select: text;
 -moz-user-select: text;
 -ms-user-select: text;
 user-select: text;
-height:640px;
-width:400px;
+height:280px;
+width:47.5%;
 overflow-y:scroll;
-position:absolute;
-right:0;
-z-index:1;
+display: inline-block;
 }
 .logline.em {
 text-align: center;
@@ -325,6 +330,42 @@ color: #f66;
 }
 .logline.discard, .logline.draw, .logline.verbose {
 color: #888;
+}
+#goals {
+text-align: left;
+border: 2px solid #333; background: rgba(100,100,100,0.95);
+border-radius: 10px;
+width: 47.5%;
+display: inline-block;
+padding: 0 5px;
+margin: 1px;
+}
+#goals img {
+  width: 100%;
+  border-radius: 10px;
+  margin: 3px;
+}
+#goals th.claimed img {
+  filter: grayscale(1) brightness(0.8);
+  -webkit-filter: grayscale(1) brightness(0.8);
+}
+#goals th {
+padding: 0px;
+vertical-align: bottom;
+}
+#goals td {
+color: #000;
+text-align: left;
+font-size: 20px;
+}
+#goals span {
+display: inline-block;
+text-align: right;
+border-radius: 10px;
+}
+#goals span.player0 {
+background-color: #44a;
+color: #fff;
 }
 .player {
 overflow: hidden;
@@ -388,16 +429,16 @@ width: 100px;
 <div class="screen" id="gamescreen" hidden>
 <div style="text-align:right">
 <button id="restart_undo" data-accel="ctrl-90" onclick="GUI.do_undo(GUI.RESTART.UNDO)">Undo</button>
+<!-- <span style="position:relative;display:inline-block">
+<button onclick="var m=document.getElementById('goals');m.hidden=!m.hidden;m.scrollTop=m.scrollHeight" id="goalsbutton" hidden>Goals</button></span>
 <span style="position:relative;display:inline-block">
-<button onclick="var m=document.getElementById('gamelog');m.hidden=!m.hidden;m.scrollTop=m.scrollHeight">Log</button><div class="gamelog" id="gamelog" hidden style="">
-<table id="gamelogtext"></table>
-</div></span>
+<button onclick="var m=document.getElementById('gamelog');m.hidden=!m.hidden;m.scrollTop=m.scrollHeight">Log</button></span>-->
 <span style="position:relative;display:inline-block" onclick="var m=document.getElementById('menu');m.hidden=!m.hidden">
-<button id="menu_button"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="2 2 20 20">
+<button id="menu_button"><!--<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="2 2 20 20">
 <path style="fill:#ccc" d="M6,15h12c0.553,0,1,0.447,1,1v1c0,0.553-0.447,1-1,1H6c-0.553,0-1-0.447-1-1v-1C5,15.447,5.447,15,6,15z M5,11v1
     c0,0.553,0.447,1,1,1h12c0.553,0,1-0.447,1-1v-1c0-0.553-0.447-1-1-1H6C5.447,10,5,10.447,5,11z M5,6v1c0,0.553,0.447,1,1,1h12
     c0.553,0,1-0.447,1-1V6c0-0.553-0.447-1-1-1H6C5.447,5,5,5.447,5,6z"/>
-</svg>
+</svg>-->Menu
 </button><div class="menu" id="menu" hidden style="position:absolute;right:0;z-index:1;width:160px">
 <div data-accel="ctrl-shift-90" onclick="GUI.do_undo(GUI.RESTART.UNDO_ROUND)">Undo Round</div>
 <div onclick="GUI.do_undo(GUI.RESTART.UNDO_GAME)">Restart Game</div>
@@ -408,7 +449,12 @@ width: 100px;
 <div onclick="GUI.set_screen('aboutscreen')">About</div>
 </div></span>
 </div>
+<div id="goals" hidden></div>
+<div class="gamelog" id="gamelog">
+<table id="gamelogtext"></table>
+</div><br>
 <table><tr><td><table><tr id="game_status"></tr></table></td><td id="promptcontainer"><span id="actionprompt"></span> <button id="actionbutton" onclick="GUI.do_send()">Done</button></td></tr></table>
+<span style="position:absolute;top:0;left:0;display:inline-block"><div id="goals"></div></span>
 <div id="board" onclick="GUI.do_click(event)">
     <div id="player0" class="player player0">
      <div class="deck" id="hand"></div>
@@ -535,6 +581,8 @@ var GUI = (function() {
     ea.selectedIndex = exp_level;
     eb.selectedIndex = num_players - 2;
     if (advanced) ec.classList.add('selected');
+    if (goals) ed.classList.add('selected');
+    if (goals) document.getElementById('goals').hidden = false;
     update_menu();
   }
 
@@ -545,10 +593,10 @@ var GUI = (function() {
     var menu_num_players = document.getElementById('menu_num_players').value;
     var menu_exp_level = document.getElementById('menu_exp_level').value;
     var menu_advanced = !ec.hidden && ec.classList.contains('selected');
-    var menu_goals = !ec.hidden && ed.classList.contains('selected');
-    var menu_takeovers = !ec.hidden && ee.classList.contains('selected');
+    var menu_goals = !ed.hidden && ed.classList.contains('selected');
+    var menu_takeovers = !ee.hidden && ee.classList.contains('selected');
     if (menu_exp_level == exp_level && menu_num_players == num_players &&
-      menu_advanced == advanced) {
+      menu_advanced == advanced && menu_goals == goals) {
       set_screen('gamescreen');
       do_undo(RESTART.NEW);
       return;
@@ -652,6 +700,7 @@ var GUI = (function() {
   var num_players = 2;
   var exp_level = 0;
   var advanced = false;
+  var goals = false;
   var images = [];
   var images_data;
   var game_over = false;
@@ -680,17 +729,23 @@ var GUI = (function() {
       advanced = true;
       params.push('-a');
     }
-    if (true || ('nogoals' in url_params)) params.push('-nog');
+    if (('nogoals' in url_params)) {
+      goals = false;
+      params.push('-nog');
+    } else {
+      goals = exp_level >= 1 && exp_level <= 3;
+    }
     if (true || ('notakeovers' in url_params)) params.push('-not');
     history.replaceState({}, document.title, window.location.pathname);
   } else {
     var s = localStorage && localStorage.getItem('autosave.rftg');
     if (s) {
-      var m = s.match(/^RFTG Save\n0.9.4\n\d+\n(\d+) (\d+)\n(\d+) /);
+      var m = s.match(/^RFTG Save\n0.9.4\n\d+\n(\d+) (\d+)\n(\d+) (\d+)/);
       if (m) {
         num_players = parseInt(m[1]);
         exp_level = parseInt(m[2]);
         advanced = m[3] === '1';
+        goals = exp_level >= 1 && exp_level <= 3 && m[4] !== '1';
         save = s;
       }
     }
@@ -736,7 +791,7 @@ var GUI = (function() {
     card_popup(card_id(c));
     ev.preventDefault();
   });
-  var long_touch;
+  var long_touch, long_touch_x, long_touch_y;
   function do_touch(ev) {
     if (ev.touches.length === 1) {
       var c = target_card(ev.touches[0].target);
@@ -744,6 +799,8 @@ var GUI = (function() {
         card_popup(card_id(c));
         long_touch = undefined;
       }, 1000);
+      long_touch_x = ev.touches[0].clientX;
+      long_touch_y = ev.touches[0].clientY;
     } else {
       if (long_touch) window.clearTimeout(long_touch);
       long_touch = undefined;
@@ -752,6 +809,13 @@ var GUI = (function() {
   document.getElementById('board').addEventListener('touchstart', do_touch);
   document.getElementById('board').addEventListener('touchend', do_touch);
   document.getElementById('board').addEventListener('touchcancel', do_touch);
+  document.getElementById('board').addEventListener('touchmove', function(ev) {
+    if (Math.abs(long_touch_x - ev.touches[0].clientX) > 10 ||
+        Math.abs(long_touch_y - ev.touches[0].clientY) > 10) {
+      if (long_touch) window.clearTimeout(long_touch);
+      long_touch = undefined;
+    }
+  });
 
   function set_prompt(txt) {
     document.getElementById('actionprompt').innerHTML = txt;
@@ -1291,9 +1355,12 @@ var GUI = (function() {
       if (diff && animate && content) content = '<div class="modified">' + content + '</div>';
       return '<td class="icon' + et + '"' + bg + '>' + (content || '&nbsp;') + '</td>';
     }
+    function makegoal(id, et) {
+      return '<td class="goal goal' + et + '"><img src="' + image_from_data(2000 + id) + '"></td>';
+    }
 
     function makecard(c, i) {
-      var top = 0, num_goods = c.num_goods;
+     var top = 0, num_goods = c.num_goods;
       if (narrow) {
       	var top = Math.floor(i/rowWidth) * 120;
       	var pos = (i%rowWidth) * cardspacing;
@@ -1341,6 +1408,7 @@ var GUI = (function() {
       t += makesumicon(5);
       t += makesumicon(3);
       t += makesumicon(3, '6');
+      if (game_status.goals.length) t += '<td>Goals</td>';
       if (exp_level === 3) t += makesumicon(ICON.PRESTIGE);
       t += '<td>Sum</td>';
       var players = [];
@@ -1356,6 +1424,7 @@ var GUI = (function() {
         var p = game_status.player[e];
         var pos = players.filter(function(a) { return score(a) > score(e); }).length + 1;
         var cells = [pos + '.', p.vp, p.world_vp, p.dev_vp, p.dev6_vp];
+        if (game_status.goals.length) cells.push(p.goal_vp);
         if (exp_level === 3) cells.push(p.prestige);
         cells.push(p.total_vp);
         return '<tr class="player' + e + '">' + cells.map(function(e) { return '<td>' + e + '</td>'; }).join('');
@@ -1369,12 +1438,12 @@ var GUI = (function() {
       var deckLength = decks[j].length;
       if (deckLength > 1){
       	cardspacing = (cardelem.offsetWidth - 210) / ((narrow? Math.min(rowWidth, deckLength) : deckLength) - 1);
-	if (cardspacing > 210) cardspacing = 210;
+      if (cardspacing > 210) cardspacing = 210;
       }
       if (narrow) {
-      	var newHeight = 290;
-	if (deckLength > rowWidth) newHeight = 290 + (120 * Math.floor((deckLength - 1) / rowWidth));
-	document.getElementById(j).style.height = newHeight + 'px';
+        var newHeight = 290;
+		if (deckLength > rowWidth) newHeight = 290 + (120 * Math.floor((deckLength - 1) / rowWidth));
+		document.getElementById(j).style.height = newHeight + 'px';
       }
       decks[j] = decks[j].sort(function(a, b) { return a.sortkey - b.sortkey; });
       cardelem.innerHTML = decks[j].map(makecard).join('');
@@ -1401,14 +1470,43 @@ var GUI = (function() {
     var txt = makeicon(ICON.DRAW, '<b>' + game_status.deck_size + '</b><br>Deck');
     txt += makeicon(ICON.HANDSIZE, '<b>' + game_status.discard_size + '</b><br>Discard');
     txt += makeicon(game_status.vp_stack > 0 ? ICON.VP : ICON.VP_EMPTY, '<b>' + game_status.vp_stack + '</b><br>VP');
-	if (game_status.phases.some(Boolean)){ // checks if phases have been selected
+    if (game_status.phases.some(Boolean)){ // checks if phases have been selected
 		txt += makeicon();
 		(advanced ? [23, 3, 3, 5, 5, 24, 9] : [23, 3, 5, 24, 9]).forEach(function(e, j) {
-		  txt += makeactionicon(e, game_status.phases[j], j === game_status.current_phase);
+			txt += makeactionicon(e, game_status.phases[j], j === game_status.current_phase);
 		});
 	}
     txt += makeicon();
     document.getElementById('game_status').innerHTML = txt;
+    var goal_progress = [];
+    var goal_claimed = [];
+    var goal_maximum = game_status.goals.map(function(e){return e.min;});
+    txt = '<table><tr>';
+    txt += game_status.goals.map(function(e,i){
+      var claimed = i < 4 && game_status.player.some(function (p) {return p.goals_claimed[i] > 0;});
+      var et = claimed ? ' class="claimed"' : '';
+      goal_claimed[i] = claimed;
+      game_status.player.forEach(function(e){
+        if (e.goals_progress[i] > goal_maximum[i]) goal_maximum[i] = e.goals_progress[i];
+      });
+      goal_progress[i] = game_status.player.map(function (e,i){return i;}).sort(function (a,b) {
+        return (game_status.player[b].goals_progress[i] * 4 + game_status.player[b].goals_claimed[i]) -
+               (game_status.player[a].goals_progress[i] * 4 + game_status.player[a].goals_claimed[i]);
+      });
+      return '<th'+et+'><img src="' + image_from_data(2000 + e.idx) + '"></th>';
+    }).join('');
+    for (var j = 0; j < num_players; j++) {
+      txt += '<tr>'
+      txt += game_status.goals.map(function(e,i){
+        var p_nr = goal_progress[i][j];
+        var p = game_status.player[p_nr];
+        if (p.goals_progress[i] <= 0 || goal_claimed[i]) return '<td></td>';
+        var perc = p.goals_progress[i] / goal_maximum[i] * 100;
+        return '<td><span style="width:'+perc+'%" class="player'+p_nr+'">'+p.goals_progress[i]+'&nbsp;</span></td>';
+      }).join('');
+    }
+    txt += '</table>';
+    document.getElementById('goals').innerHTML = txt;
     for (var j = 0; j < num_players; j++) {
       var p = game_status.player[j];
       var txt = makeicon(ICON.VP, '<b style="font-size:20px">' + p.total_vp + '</b><br>' + p.vp, pdiff('total_vp'));
@@ -1424,7 +1522,12 @@ var GUI = (function() {
       if (p.military) txt += makeicon(ICON.MILITARY, '<b style="font-size:25px;color:red">' + p.military + '</b>', pdiff('military'));
       else txt += makeicon();
       if (p.action >= 0) txt += makeactionicon(p.action, true, false);
+      else txt += makeicon();
       if (advanced && p.second_action >= 0) txt += makeactionicon(p.second_action, true, false);
+      else if (advanced) txt += makeicon();
+      for (var i = 0; i < game_status.goals.length; i++)
+        if (p.goals_claimed[i])
+          txt += makegoal(game_status.goals[i].idx, p.goals_claimed[i]);
       document.getElementById('player_status' + j).innerHTML = txt;
       if (j) document.getElementById('player_status_over' + j).innerHTML = txt;
     }
@@ -1524,15 +1627,23 @@ var GUI = (function() {
           vp_stack: array[i++],
           phases: [],
           player: [],
+          goals: [],
         }
         for (var j = 0; j < (advanced ? 7 : 5); j++) {
           var v = array[i++];
           game_status.phases[j] = v > 0;
           if (v > 1) game_status.current_phase = j;
         }
+        while (array[i] >= 0) {
+          game_status.goals.push({
+            idx: array[i++],
+            min: array[i++],
+          });
+        }
+        i++;
         for (var j = 0; j < num_players; j++) {
-          var t;
-          game_status.player.push({
+          var t, p;
+          game_status.player.push(p = {
             action: array[i++],
             second_action: array[i++],
             vp: array[i++],
@@ -1548,7 +1659,13 @@ var GUI = (function() {
             dev_vp: array[i++],
             dev6_vp: array[i++],
             table_size: decks['table'+j].length,
+            goals_claimed: [],
+            goals_progress: [],
           });
+          for (var k = 0; k < game_status.goals.length; k++) {
+            p.goals_claimed[k] = array[i++];
+            p.goals_progress[k] = array[i++];
+          }
         }
       } else if (msgtype == MSG.LOGLINE) {
         add_log({
@@ -1635,17 +1752,16 @@ var GUI = (function() {
     if (save) FS.createDataFile('/', 'autosave.rftg', save, true, true);
   }
   GUI.firstRun = function() {
-    var metaTag=document.createElement('meta');
+	var metaTag=document.createElement('meta');
     metaTag.name = "viewport"
     if (window.innerWidth > window.innerHeight) {
       metaTag.content = "width=1500, initial-scale=1.0, user-scalable=yes";
       narrow = false;
     } else {
-      metaTag.content = "width=720, initial-scale=0.5, user-scalable=yes";
+      metaTag.content = "width=720, initial-scale=0.5, user-scalable=no";
       narrow = true;
     }
     document.getElementsByTagName('head')[0].appendChild(metaTag);
-
     read_images(images_data = FS.readFile('images.data'));
     set_screen('gamescreen');
     get_status();
